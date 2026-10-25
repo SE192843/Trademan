@@ -16,6 +16,8 @@ interface UseAPCalculatorReturn {
   handleChange: (field: keyof APFormValues, value: string) => void;
   handleSubmit: () => void;
   handleReset: () => void;
+  /** Inject values from OCR scan and auto-calculate */
+  injectValues: (apSpent: number | null, honorGained: number | null) => void;
 }
 
 const INITIAL_FORM_VALUES: APFormValues = {
@@ -83,6 +85,30 @@ export function useAPCalculator(): UseAPCalculatorReturn {
     setHasCalculated(false);
   }, []);
 
+  /**
+   * Injects OCR-scanned values directly into the form and auto-triggers calculation.
+   * Called by CalculatorView after a successful image scan.
+   */
+  const injectValues = useCallback(
+    (apSpent: number | null, honorGained: number | null) => {
+      const newValues: APFormValues = {
+        apSpent: apSpent !== null ? String(apSpent) : '',
+        honorGained: honorGained !== null ? String(honorGained) : '',
+      };
+
+      setFormValues(newValues);
+      setErrors({});
+
+      // Auto-calculate if both values are valid
+      if (apSpent !== null && honorGained !== null && apSpent > 0 && honorGained >= 0) {
+        const calc = calculateAll(apSpent, honorGained);
+        setResult(calc);
+        setHasCalculated(true);
+      }
+    },
+    []
+  );
+
   return {
     formValues,
     errors,
@@ -91,5 +117,6 @@ export function useAPCalculator(): UseAPCalculatorReturn {
     handleChange,
     handleSubmit,
     handleReset,
+    injectValues,
   };
 }
